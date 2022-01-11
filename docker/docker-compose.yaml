@@ -1,0 +1,32 @@
+version: "3.4"
+
+services:
+  jupyter:
+    image: jupyter/minimal-notebook:minimal
+    container_name: jupyter
+    restart: always
+    command: "start-notebook.sh \
+      --NotebookApp.token='test' \
+      --NotebookApp.base_url='/jupyter' \
+      --NotebookApp.allow_origin='*'"
+
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.17.5-alpine
+    container_name: nginx
+    restart: always
+    command: "nginx \
+      '-g' \ 
+      'daemon off;' \ 
+      '-c' \
+      '/config/nginx.conf'"
+    ports:
+      - 8080:8080
+    volumes:
+      - ./nginx/nginx.conf:/config/nginx.conf
+    depends_on:
+      - jupyter
+      
+networks:
+  default:
+    external:
+      name: jupyter-network

@@ -1,0 +1,60 @@
+replicaCount: 1
+
+image:
+  pullSecret: SHOULD_BE_SET_BY_DEPLOYMENT
+
+nameOverride: ""
+fullnameOverride: ""
+
+prometheus:
+  enabled: false
+
+podSecurityContext:
+  runAsUser: 1000
+  fsGroup: 1000
+
+service:
+  type: ClusterIP
+  port: 8888
+  portName: tcp-jptnk
+  targetPort: 8888
+
+
+jupyter:
+  image: 
+    repository: jupyter/minimal-notebook
+    tag: minimal
+    pullPolicy: Always
+  port: 8888
+  portName: tcp-jp
+  token: SHOULD_BE_SET_BY_DEPLOYMENT
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      memory: 128Mi
+      cpu: 1m
+
+nginx:
+  image:
+    repository: nginxinc/nginx-unprivileged
+    tag: 1.17.5-alpine
+  portName: tcp-nginx
+
+  jupyterPort: 8888
+  jupyterProxyPath: /jupyter
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

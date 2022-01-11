@@ -1,0 +1,67 @@
+replicaCount: 1
+
+
+
+nameOverride: ""
+fullnameOverride: ""
+
+prometheus:
+  enabled: false
+
+podSecurityContext:
+  runAsUser: 1000
+  fsGroup: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  portName: tcp-jppod
+  targetPort: 8080
+
+image:
+  pullPolicy: Always
+  pullSecret: SHOULD_BE_SET_IN_ARGOCD
+
+jupyter:
+  image:
+    repository: registry.app.corpintra.net/ccdb/jupyter/datascience-notebook
+    tag: minimal
+
+  config:
+    token: SHOULD_BE_SET_IN_ARGOCD
+    allowOrigin: "*"
+    baseUrl: ccdb-int2/ccdb-jupyter
+
+  port: 8888
+  portName: tcp-jp
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      memory: 128Mi
+      cpu: 1m
+
+nginx:
+  image:
+    repository: registry.app.corpintra.net/ccdb/nginx-unprivileged
+    tag: 1.17.5-alpine
+
+  port: 8080
+  portName: tcp-nginx
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

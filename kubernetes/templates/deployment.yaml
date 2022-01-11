@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jupyter-notebook.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "jupyter-notebook.name" . }}
+    helm.sh/chart: {{ include "jupyter-notebook.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "jupyter-notebook.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "jupyter-notebook.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: '{{ .Values.prometheus.enabled }}'
+        prometheus.io/port: '{{ .Values.service.targetPort }}'
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.jupyter.image.repository }}:{{ .Values.jupyter.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}         
+          ports:
+            - containerPort: {{ .Values.jupyter.port }}
+              name: {{ .Values.jupyter.portName }}
+          command: ["start-notebook.sh"]
+          args: 
+            - "--NotebookApp.token='{{ .Values.jupyter.config.token }}'"
+            - "--NotebookApp.base_url='{{ .Values.jupyter.config.baseUrl }}'"
+            - "--NotebookApp.allow_origin='{{ .Values.jupyter.config.allowOrigin }}'"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: {{ .Chart.Name }}-nginx
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["nginx", "-g", "daemon off;", "-c", "/config/nginx.conf"]
+          ports:
+            - name: {{ .Values.nginx.portName }}
+              containerPort: {{ .Values.nginx.port }}
+          volumeMounts:
+            - mountPath: /config
+              name: config-nginx
+          resources:
+            {{- toYaml .Values.nginx.resources | nindent 12 }}            
+{{- if .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{- toYaml . | nindent 8 }}
+{{- end }}
+      volumes:              
+      - name: config-nginx
+        configMap:
+          name: {{ template "jupyter-notebook.fullname" . }}-nginx-configmap 
